@@ -40,7 +40,7 @@ extern char _vector_start[];
 /*
  * Attribute 'used' forces the compiler to emit ivt_header
  * even if nothing references it.
- * IVT for SoC S32K344, the minimal boot configuration is:
+ * IVT for S32K3 SoCs, the minimal boot configuration is:
  * - Watchdog (SWT0) is disabled (default value).
  * - Non-Secure Boot is used (default value).
  * - Ungate clock for Cortex-M7_0 after boot.

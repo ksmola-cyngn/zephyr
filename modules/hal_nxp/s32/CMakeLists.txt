@@ -2,6 +2,10 @@
 
 # Set the SoC specific drivers and configuration to build
 set(SOC_BASE ${CONFIG_SOC})
+if(CONFIG_SOC_S32K348)
+  # Uses the S32K358 HAL configuration
+  set(SOC_BASE s32k358)
+endif()
 
 add_subdirectory(${ZEPHYR_CURRENT_MODULE_DIR}/s32/drivers/${CONFIG_SOC_SERIES} hal_nxp/s32/drivers)
 add_subdirectory(${ZEPHYR_CURRENT_MODULE_DIR}/s32/soc/${SOC_BASE} hal_nxp/s32/soc)
