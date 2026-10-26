@@ -54,6 +54,11 @@ struct eth_nxp_s32_data {
 	uint8_t mac_addr[ETH_NXP_S32_MAC_ADDR_LEN];
 	struct k_sem rx_sem;
 	struct k_sem tx_sem;
+	struct k_mutex tx_mutex;
+	/* Tx buffers still with the DMA, oldest first */
+	uint8_t *tx_inflight[CONFIG_ETH_NXP_S32_TX_RING_LEN];
+	uint16_t tx_inflight_head;
+	uint16_t tx_inflight_count;
 	struct k_thread rx_thread;
 
 	K_KERNEL_STACK_MEMBER(rx_thread_stack, CONFIG_ETH_NXP_S32_RX_THREAD_STACK_SIZE);
@@ -201,6 +206,7 @@ static int eth_nxp_s32_init(const struct device *dev)
 
 	k_sem_init(&ctx->rx_sem, 0, 1);
 	k_sem_init(&ctx->tx_sem, 0, 1);
+	k_mutex_init(&ctx->tx_mutex);
 
 	k_thread_create(&ctx->rx_thread, ctx->rx_thread_stack,
 			K_KERNEL_STACK_SIZEOF(ctx->rx_thread_stack),
@@ -289,14 +295,41 @@ static void eth_nxp_s32_iface_init(struct net_if *iface)
 	phy_link_callback_set(cfg->phy_dev, &phy_link_state_changed, (void *)dev);
 }
 
+/* Reclaim finished Tx buffers. Needs tx_mutex. */
+static void eth_nxp_s32_tx_reclaim(const struct device *dev)
+{
+	const struct eth_nxp_s32_config *cfg = dev->config;
+	struct eth_nxp_s32_data *ctx = dev->data;
+	Gmac_Ip_BufferType buf;
+	Gmac_Ip_TxInfoType tx_info;
+	Gmac_Ip_StatusType status;
+
+	while (ctx->tx_inflight_count > 0U) {
+		buf.Data = ctx->tx_inflight[ctx->tx_inflight_head];
+		status = Gmac_Ip_GetTransmitStatus(cfg->instance, cfg->tx_ring_idx, &buf, &tx_info);
+		if (status == GMAC_STATUS_BUSY) {
+			break;
+		}
+
+		if (status != GMAC_STATUS_SUCCESS) {
+			LOG_ERR("Failed to restore tx buffer (%d)", status);
+		} else if (tx_info.ErrMask != 0U) {
+			LOG_ERR("Tx frame has errors (error mask 0x%X)", tx_info.ErrMask);
+		}
+
+		ctx->tx_inflight_head = (ctx->tx_inflight_head + 1U) % CONFIG_ETH_NXP_S32_TX_RING_LEN;
+		ctx->tx_inflight_count--;
+	}
+}
+
 static int eth_nxp_s32_tx(const struct device *dev, struct net_pkt *pkt)
 {
 	struct eth_nxp_s32_data *ctx = dev->data;
 	const struct eth_nxp_s32_config *cfg = dev->config;
 	size_t pkt_len = net_pkt_get_len(pkt);
+	k_timepoint_t deadline = sys_timepoint_calc(ETH_NXP_S32_DMA_TX_TIMEOUT);
 	int res = 0;
 	Gmac_Ip_BufferType buf;
-	Gmac_Ip_TxInfoType tx_info;
 	Gmac_Ip_StatusType status;
 	Gmac_Ip_TxOptionsType tx_options = {
 		.NoInt = FALSE,
@@ -306,46 +339,53 @@ static int eth_nxp_s32_tx(const struct device *dev, struct net_pkt *pkt)
 
 	__ASSERT(pkt, "Packet pointer is NULL");
 
-	k_sem_reset(&ctx->tx_sem);
+	k_mutex_lock(&ctx->tx_mutex, K_FOREVER);
 
-	buf.Length = (uint16_t)pkt_len;
-	buf.Data = NULL;
-	status = Gmac_Ip_GetTxBuff(cfg->instance, cfg->tx_ring_idx, &buf, NULL);
+	/* Wait only if every buffer is still with the DMA */
+	while (true) {
+		eth_nxp_s32_tx_reclaim(dev);
+
+		buf.Length = (uint16_t)pkt_len;
+		buf.Data = NULL;
+		status = Gmac_Ip_GetTxBuff(cfg->instance, cfg->tx_ring_idx, &buf, NULL);
+		if (status != GMAC_STATUS_TX_BUFF_BUSY) {
+			break;
+		}
+
+		if (k_sem_take(&ctx->tx_sem, sys_timepoint_timeout(deadline)) != 0) {
+			LOG_ERR("Timeout waiting for a tx buffer");
+			res = -ENOBUFS;
+			goto error;
+		}
+	}
+
 	if (status != GMAC_STATUS_SUCCESS) {
 		LOG_ERR("Failed to get tx buffer (%d)", status);
-		return -ENOBUFS;
+		res = -ENOBUFS;
+		goto error;
 	}
 
 	res = net_pkt_read(pkt, buf.Data, pkt_len);
-	if (res) {
+	if (res != 0) {
 		LOG_ERR("Failed to copy packet to tx buffer (%d)", res);
-		return -ENOBUFS;
+		res = -ENOBUFS;
+		goto error;
 	}
 
 	buf.Length = (uint16_t)pkt_len;
 	status = Gmac_Ip_SendFrame(cfg->instance, cfg->tx_ring_idx, &buf, &tx_options);
 	if (status != GMAC_STATUS_SUCCESS) {
 		LOG_ERR("Failed to tx frame (%d)", status);
-		return -EIO;
+		res = -EIO;
+		goto error;
 	}
 
-	/* Wait for the transmission to complete */
-	if (k_sem_take(&ctx->tx_sem, ETH_NXP_S32_DMA_TX_TIMEOUT) != 0) {
-		LOG_ERR("Timeout transmitting frame");
-		return -EIO;
-	}
+	ctx->tx_inflight[(ctx->tx_inflight_head + ctx->tx_inflight_count) %
+			 CONFIG_ETH_NXP_S32_TX_RING_LEN] = buf.Data;
+	ctx->tx_inflight_count++;
 
-	/* Restore the buffer address pointer and clear the descriptor after the status is read */
-	status = Gmac_Ip_GetTransmitStatus(cfg->instance, cfg->tx_ring_idx, &buf, &tx_info);
-	if (status != GMAC_STATUS_SUCCESS) {
-		LOG_ERR("Failed to restore tx buffer: %s (%d) ",
-			(status == GMAC_STATUS_BUSY ? "busy" : "buf not found"), status);
-		return -EIO;
-	} else if (tx_info.ErrMask != 0U) {
-		LOG_ERR("Tx frame has errors (error mask 0x%X)", tx_info.ErrMask);
-		return -EIO;
-	}
-
+error:
+	k_mutex_unlock(&ctx->tx_mutex);
 	return res;
 }
 
