@@ -607,6 +607,14 @@
 			status = "disabled";
 		};
 
+		qspi0: qspi@404cc000 {
+			compatible = "nxp,s32-qspi";
+			reg = <0x404cc000 0x4000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
 		lpspi0: spi@40358000 {
 			compatible = "nxp,lpspi";
 			reg = <0x40358000 0x4000>;
