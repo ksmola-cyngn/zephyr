@@ -1,0 +1,38 @@
+# Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  HyperRAM memory device on the NXP S32 QuadSPI controller.
+
+  The device is accessed over HyperBus (8 data lines, DDR) through the controller's AHB
+  window, which maps it as readable and writable memory. The controller samples read
+  data with its pad loopback clock half a cycle early: it needs a-rx-clock-source =
+  "LOOPBACK" and sample-delay-half-cycle.
+
+  Write the AHB window through a cacheable mapping, or with 32-bit accesses: two
+  address-contiguous AHB writes smaller than 32 bits stall the controller.
+
+compatible: "nxp,s32-qspi-hyperram"
+
+include: base.yaml
+
+on-bus: qspi
+
+properties:
+  reg:
+    required: true
+    description: |
+      Port the device is connected to: 0 for A1, 1 for A2, 2 for B1, 3 for B2.
+
+  size:
+    type: int
+    required: true
+    description: Memory size in bits.
+
+  read-latency-cycles:
+    type: int
+    required: true
+    description: |
+      Initial latency, in clock cycles, as configured in the device (Configuration
+      Register 0). The device must use fixed latency: the controller waits twice this
+      count.

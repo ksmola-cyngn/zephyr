@@ -8,3 +8,30 @@ config MEMC_NXP_S32_QSPI
 	select PINCTRL
 	help
 	  Enable NXP S32 Quad Serial Peripheral Interface (QSPI) controller.
+
+config MEMC_NXP_S32_QSPI_HYPERRAM
+	bool "NXP S32 QSPI HyperRAM"
+	default y
+	depends on DT_HAS_NXP_S32_QSPI_HYPERRAM_ENABLED
+	depends on MEMC_NXP_S32_QSPI
+	help
+	  HyperRAM on the NXP S32 QSPI controller, mapped as memory through the
+	  controller's AHB window for reads and writes.
+
+config MEMC_NXP_S32_QSPI_HYPERRAM_INIT_PRIORITY
+	int "NXP S32 QSPI HyperRAM initialization priority"
+	default 81 if MSPI
+	default 1
+	depends on MEMC_NXP_S32_QSPI_HYPERRAM
+	help
+	  Initialization priority of the HyperRAM, after its QSPI controller
+	  (MEMC_INIT_PRIORITY).
+
+config MEMC_NXP_S32_QSPI_HYPERRAM_NO_STREAMING_WRITES
+	bool "Disable the core's streaming writes"
+	default y
+	depends on MEMC_NXP_S32_QSPI_HYPERRAM
+	depends on CPU_CORTEX_M7
+	help
+	  Set ACTLR.DISRAMODE so memset/memcpy writes go through the data cache.
+	  Contiguous AHB writes smaller than 32 bits stall the QSPI controller.
