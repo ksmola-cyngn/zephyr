@@ -520,7 +520,8 @@ static int fxls8974_init(const struct device *dev)
 			return -EIO;
 		}
 
-		if (data->whoami != WHOAMI_ID_FXLS8964 &&
+		if (data->whoami != WHOAMI_ID_FXLS8961 &&
+		data->whoami != WHOAMI_ID_FXLS8964 &&
 		data->whoami != WHOAMI_ID_FXLS8974) {
 			LOG_ERR("Unknown Device ID 0x%x", data->whoami);
 			return -ENXIO;
