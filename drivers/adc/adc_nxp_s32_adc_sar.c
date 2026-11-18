@@ -433,6 +433,8 @@ static void adc_nxp_s32_isr(const struct device *dev)
 	static const Adc_Sar_Ip_ConfigType adc_nxp_s32_default_config##n =	\
 	{									\
 		.ConvMode = ADC_SAR_IP_CONV_MODE_ONESHOT,			\
+		.ClkSelect = ADC_SAR_IP_CLK_FULL_BUS,				\
+		.CalibrationClkSelect = ADC_SAR_IP_CLK_HALF_BUS,		\
 		ADC_NXP_S32_RESOLUTION_CFG(n)					\
 		ADC_NXP_S32_HIGH_SPEED_CFG(n)					\
 		.EndOfNormalChainNotification =					\
