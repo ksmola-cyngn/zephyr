@@ -23,10 +23,12 @@
 			clock-frequency = <DT_FREQ_M(240)>;
 		};
 
-		cpu@1 {
+		/* Cortex-M7_1 is the lockstep checker of Cortex-M7_0 and runs no code of its own */
+		cpu@2 {
 			device_type = "cpu";
 			compatible = "arm,cortex-m7";
-			reg = <1>;
+			reg = <2>;
+			clock-frequency = <DT_FREQ_M(240)>;
 		};
 
 		mpu: mpu@e000ed90 {
@@ -58,9 +60,31 @@
 			zephyr,memory-attr = <DT_MEM_ARM(ATTR_MPU_RAM)>;
 		};
 
+		/* SRAM0-2, 256 KiB each. sram0_1 is SRAM0-1, for dual-core use. */
 		sram0_2: sram0_2@20400000 {
 			compatible = "mmio-sram";
 			reg = <0x20400000 DT_SIZE_K(768)>;
+		};
+
+		sram0_1: sram0_1@20400000 {
+			compatible = "mmio-sram";
+			reg = <0x20400000 DT_SIZE_K(512)>;
+			status = "disabled";
+		};
+
+		sram2: sram2@20480000 {
+			compatible = "mmio-sram";
+			reg = <0x20480000 DT_SIZE_K(256)>;
+			status = "disabled";
+		};
+
+		/* Core-to-core interrupts 0-3, same numbers on both cores */
+		mscm: mbox@40260000 {
+			compatible = "nxp,s32-mscm-mbox";
+			reg = <0x40260000 0x1000>;
+			interrupts = <0 0>, <1 0>, <2 0>, <3 0>;
+			#mbox-cells = <1>;
+			status = "disabled";
 		};
 
 		c40fc: flash-controller@40268000 {
