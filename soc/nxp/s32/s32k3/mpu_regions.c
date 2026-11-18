@@ -7,6 +7,7 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/linker/devicetree_regions.h>
 #include <zephyr/arch/arm/mpu/arm_mpu_mem_cfg.h>
+#include <zephyr/toolchain.h>
 
 #if !defined(CONFIG_XIP)
 extern char _rom_attr[];
@@ -17,6 +18,12 @@ extern char _rom_attr[];
 #define REGION_PPB_BASE_ADDRESS        0xE0000000
 #define REGION_PPB_SIZE                REGION_1M
 
+#if defined(CONFIG_XIP) && (CONFIG_FLASH_SIZE > 4096)
+BUILD_ASSERT((CONFIG_FLASH_BASE_ADDRESS == 0x400000) && (CONFIG_FLASH_SIZE <= 8192),
+	     "Flash region assumes at most 8 MiB of flash at 0x00400000");
+#define FLASH_16M_SRD ((0xC3U << MPU_RASR_SRD_Pos) & MPU_RASR_SRD_Msk)
+#endif
+
 static struct arm_mpu_region mpu_regions[] = {
 
 	/* ERR011573: use first region to prevent speculative access in entire memory space */
@@ -25,7 +32,14 @@ static struct arm_mpu_region mpu_regions[] = {
 	/* Keep before CODE region so it can be overlapped by SRAM CODE in non-XIP systems */
 	MPU_REGION_ENTRY("SRAM", DT_CHOSEN_SRAM_ADDR, REGION_RAM_ATTR(REGION_SRAM_SIZE)),
 
-#ifdef CONFIG_XIP
+#if defined(CONFIG_XIP) && (CONFIG_FLASH_SIZE > 4096)
+	/*
+	 * A region's base must be aligned to its size: 8 MiB of flash from 0x00400000 is a
+	 * 16 MiB region from 0x00000000 with its first two and last two 2 MiB subregions
+	 * disabled, leaving 0x00400000-0x00BFFFFF.
+	 */
+	MPU_REGION_ENTRY("FLASH", 0, REGION_FLASH_ATTR(REGION_16M | FLASH_16M_SRD)),
+#elif defined(CONFIG_XIP)
 	MPU_REGION_ENTRY("FLASH", CONFIG_FLASH_BASE_ADDRESS, REGION_FLASH_ATTR(REGION_FLASH_SIZE)),
 #else
 	/* Run from SRAM */
