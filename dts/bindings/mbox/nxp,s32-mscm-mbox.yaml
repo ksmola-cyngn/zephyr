@@ -1,0 +1,43 @@
+# Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  NXP S32K3 MSCM core-to-core interrupts as a mailbox
+
+  The Miscellaneous System Control Module (MSCM) of the S32K3 lets a core raise one of
+  four core-to-core interrupts in another core. Each channel of this mailbox is one of
+  them: sending on channel N raises core-to-core interrupt N in the core set by
+  remote-cpu, and the core-to-core interrupt N of the core running the image calls the
+  callback registered for channel N. The channels carry no data (MTU 0), so it pairs
+  with an IPC backend that keeps its data in shared memory, such as icmsg.
+
+  Each core's image enables the node with the other core as remote-cpu, the logical
+  processor number MSCM reports in CPXNUM (0 for Cortex-M7_0, 2 for Cortex-M7_2 on
+  S32K358):
+
+    // Cortex-M7_0
+    &mscm {
+      remote-cpu = <2>;
+      status = "okay";
+    };
+
+compatible: "nxp,s32-mscm-mbox"
+
+include: [base.yaml, mailbox-controller.yaml]
+
+properties:
+  reg:
+    required: true
+
+  interrupts:
+    required: true
+    description: Core-to-core interrupts 0 to 3 of the local core, in that order.
+
+  remote-cpu:
+    type: int
+    required: true
+    description: |
+      Logical processor number (MSCM CPXNUM) of the core this mailbox sends to.
+
+mbox-cells:
+  - channel

@@ -1,0 +1,10 @@
+# Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+config MBOX_NXP_S32_MSCM
+	bool "NXP S32 MSCM core-to-core interrupt driver"
+	default y
+	depends on DT_HAS_NXP_S32_MSCM_MBOX_ENABLED
+	help
+	  Signalling-only mailbox driver on the core-to-core interrupts of the NXP S32K3
+	  Miscellaneous System Control Module (MSCM).
