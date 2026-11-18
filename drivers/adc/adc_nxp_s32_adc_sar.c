@@ -367,7 +367,7 @@ static void adc_nxp_s32_isr(const struct device *dev)
 		struct adc_nxp_s32_data *data = dev->data;			\
 		uint16_t result = 0;						\
 										\
-		result = Adc_Sar_Ip_GetConvData(n, PhysicalChanId);		\
+		result = Adc_Sar_Ip_GetConvData(config->instance, PhysicalChanId);\
 		LOG_DBG("End conversion, channel %d, group %d, result = %d",	\
 					ADC_SAR_IP_CHAN_2_BIT(PhysicalChanId),	\
 					config->group_channel, result);		\
@@ -393,7 +393,7 @@ static void adc_nxp_s32_isr(const struct device *dev)
 			channel = ADC_NXP_S32_GROUPCHAN_2_PHYCHAN(		\
 					config->group_channel,			\
 					(find_lsb_set(data->mask_channels)-1));	\
-			result = Adc_Sar_Ip_GetConvData(n, channel);		\
+			result = Adc_Sar_Ip_GetConvData(config->instance, channel);\
 			LOG_DBG("End chain, channel %d, group %d, result = %d",	\
 					ADC_SAR_IP_CHAN_2_BIT(channel),		\
 					config->group_channel, result);		\
