@@ -30,6 +30,17 @@ config SOC_S32K3_IVT
 	  The image carries the image vector table the boot ROM starts the boot core from.
 	  Images loaded by MCUboot and images for a core other than the boot core do not.
 
+config SOC_S32K3_START_CM7_2
+	bool "Start Cortex-M7_2"
+	default y if $(dt_nodelabel_exists,cm7_2_code_partition)
+	depends on SOC_S32K358_CM7_0
+	help
+	  Cortex-M7_0 starts Cortex-M7_2 at PRE_KERNEL_2, once the clock tree is configured,
+	  from the vector table at the start of the cm7_2_code_partition partition. Linker
+	  memory regions in system SRAM outside this image's SRAM (memory shared with
+	  Cortex-M7_2, such as IPC buffers) are zeroed with 64-bit writes before, which
+	  initializes their ECC.
+
 config IVT_HEADER_OFFSET
 	hex
 	depends on SOC_S32K3_IVT
