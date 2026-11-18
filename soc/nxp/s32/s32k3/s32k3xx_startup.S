@@ -27,6 +27,7 @@ SECTION_FUNC(TEXT, soc_early_reset_hook)
 	 * This is implemented directly in ASM, to ensure no stack access is performed.
 	 */
 
+#if !defined(CONFIG_SOC_S32K358_CM7_2)
 	/* If we come from a destructive reset, then ignore functional reset flags */
 	ldr r1, =MC_RGM_BASE
 	ldr r2, [r1, MC_RGM_DES]
@@ -35,6 +36,8 @@ SECTION_FUNC(TEXT, soc_early_reset_hook)
 	ldr r2, [r1, MC_RGM_FES]
 	cmp r2, 0x0
 	bne ECC_END
+#endif
+	/* Cortex-M7_2 always initializes its SRAM: the reset flags may be cleared already */
 
 ECC_INIT:
 	ldr r1, = DT_REG_ADDR(DT_CHOSEN(zephyr_sram))

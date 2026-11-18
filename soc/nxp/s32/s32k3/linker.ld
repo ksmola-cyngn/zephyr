@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* Emit IVT section only when XIP and (standalone app OR MCUboot itself) */
-#if defined(CONFIG_XIP) && (!defined(CONFIG_BOOTLOADER_MCUBOOT) || defined(CONFIG_MCUBOOT))
+/* Emit the IVT section only in an image that carries the IVT (CONFIG_SOC_S32K3_IVT) */
+#if defined(CONFIG_SOC_S32K3_IVT)
 
 MEMORY
 {

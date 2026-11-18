@@ -23,9 +23,16 @@ config SOC_SERIES_S32K3
 
 if SOC_SERIES_S32K3
 
+config SOC_S32K3_IVT
+	bool
+	default y if XIP && (!BOOTLOADER_MCUBOOT || MCUBOOT) && !SOC_S32K358_CM7_2
+	help
+	  The image carries the image vector table the boot ROM starts the boot core from.
+	  Images loaded by MCUboot and images for a core other than the boot core do not.
+
 config IVT_HEADER_OFFSET
 	hex
-	depends on XIP
+	depends on SOC_S32K3_IVT
 	default $(sub_hex,$(dt_node_reg_addr_int,$(dt_nodelabel_path,ivt_header)), \
 		$(dt_chosen_reg_addr_int,$(DT_CHOSEN_Z_FLASH)))
 	help
@@ -33,7 +40,7 @@ config IVT_HEADER_OFFSET
 
 config IVT_HEADER_SIZE
 	hex
-	depends on XIP
+	depends on SOC_S32K3_IVT
 	default $(dt_node_reg_size_hex,$(dt_nodelabel_path,ivt_header))
 	help
 	  Size of ivt header region

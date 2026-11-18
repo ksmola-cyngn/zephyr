@@ -22,6 +22,19 @@ config SOC_S32K358
 	bool
 	select SOC_SERIES_S32K3
 
+config SOC_S32K358_CM7_0
+	bool
+	select SOC_S32K358
+	help
+	  S32K358 Cortex-M7_0, the lockstep core. It boots from the image vector table.
+
+config SOC_S32K358_CM7_2
+	bool
+	select SOC_S32K358
+	help
+	  S32K358 Cortex-M7_2, the core outside the lockstep pair. It does not
+	  boot from the image vector table: Cortex-M7_0 starts it.
+
 config SOC
 	default "s32k344" if SOC_S32K344
 	default "s32k348" if SOC_S32K348

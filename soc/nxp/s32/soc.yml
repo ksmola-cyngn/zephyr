@@ -16,6 +16,9 @@ family:
     - name: s32k344
     - name: s32k348
     - name: s32k358
+      cpuclusters:
+      - name: cm7_0
+      - name: cm7_2
   - name: s32k5
     socs:
     - name: s32k566

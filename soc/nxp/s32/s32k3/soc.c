@@ -12,12 +12,11 @@
 #include <cmsis_core.h>
 #include <OsIf.h>
 
-#ifdef CONFIG_XIP
 /*
- * Emit IVT only for standalone XIP or MCUboot itself
+ * Emit IVT only for standalone XIP or MCUboot itself, on the boot core.
  * But not for the cases where Zephyr Image is loaded by MCUboot
  */
-#if !defined(CONFIG_BOOTLOADER_MCUBOOT) || defined(CONFIG_MCUBOOT)
+#ifdef CONFIG_SOC_S32K3_IVT
 /* Image Vector Table structure definition for S32K3XX */
 struct ivt {
 	uint32_t header;
@@ -54,8 +53,7 @@ const struct ivt ivt_header __attribute__((section(".ivt_header"), used)) = {
 	.cm7_2_start_address = NULL,
 	.lc_configure = NULL,
 };
-#endif
-#endif /* CONFIG_XIP */
+#endif /* CONFIG_SOC_S32K3_IVT */
 
 void soc_early_init_hook(void)
 {
