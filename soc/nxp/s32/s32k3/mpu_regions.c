@@ -15,8 +15,6 @@ extern char _rom_attr[];
 
 #define REGION_PERIPHERAL_BASE_ADDRESS 0x40000000
 #define REGION_PERIPHERAL_SIZE         REGION_512M
-#define REGION_PPB_BASE_ADDRESS        0xE0000000
-#define REGION_PPB_SIZE                REGION_1M
 
 #if defined(CONFIG_XIP) && (CONFIG_FLASH_SIZE > 4096)
 BUILD_ASSERT((CONFIG_FLASH_BASE_ADDRESS == 0x400000) && (CONFIG_FLASH_SIZE <= 8192),
@@ -49,7 +47,7 @@ static struct arm_mpu_region mpu_regions[] = {
 	MPU_REGION_ENTRY("PERIPHERALS", REGION_PERIPHERAL_BASE_ADDRESS,
 			 REGION_IO_ATTR(REGION_PERIPHERAL_SIZE)),
 
-	MPU_REGION_ENTRY("PPB", REGION_PPB_BASE_ADDRESS, REGION_PPB_ATTR(REGION_PPB_SIZE)),
+	/* No PPB region: the MPU doesn't apply to it */
 };
 
 const struct arm_mpu_config mpu_config = {
