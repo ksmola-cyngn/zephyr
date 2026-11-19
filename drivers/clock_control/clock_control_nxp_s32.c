@@ -229,6 +229,11 @@ static int nxp_s32_clock_init(const struct device *dev)
 {
 	Clock_Ip_StatusType status;
 
+	if (!IS_ENABLED(CONFIG_CLOCK_CONTROL_NXP_S32_INIT)) {
+		/* Another core configures the clock tree */
+		return 0;
+	}
+
 	status = Clock_Ip_Init(&Clock_Ip_aClockConfig[NXP_S32_CLOCK_CONFIG_IDX]);
 
 	return (status == CLOCK_IP_SUCCESS ? 0 : -EIO);

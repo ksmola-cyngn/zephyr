@@ -81,6 +81,14 @@ config CLOCK_CONTROL_NXP_S32_CLOCK_CONFIG_IDX
 	  This option specifies the zero-based index of the clock configuration
 	  used to initialize the SoC clocks.
 
+config CLOCK_CONTROL_NXP_S32_INIT
+	bool "Initialize the SoC clocks"
+	default y if !SOC_S32K358_CM7_2
+	help
+	  Configure the clock tree at initialization. Disable on a core that uses
+	  clocks set up by another core: the driver then only gates module clocks
+	  and reports rates.
+
 endif # CLOCK_CONTROL_NXP_S32
 
 config CLOCK_CONTROL_NXP_MCXW7X
