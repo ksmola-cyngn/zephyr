@@ -46,11 +46,11 @@
 	soc {
 		interrupt-parent = <&nvic>;
 
+		/* Covered by the flash MPU region */
 		itcm: memory@0 {
 			compatible = "zephyr,memory-region", "arm,itcm";
 			reg = <0x00000000 DT_SIZE_K(64)>;
 			zephyr,memory-region = "ITCM";
-			zephyr,memory-attr = <DT_MEM_ARM(ATTR_MPU_FLASH)>;
 		};
 
 		dtcm: memory@20000000 {

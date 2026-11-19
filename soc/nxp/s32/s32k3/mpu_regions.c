@@ -19,7 +19,7 @@ extern char _rom_attr[];
 #if defined(CONFIG_XIP) && (CONFIG_FLASH_SIZE > 4096)
 BUILD_ASSERT((CONFIG_FLASH_BASE_ADDRESS == 0x400000) && (CONFIG_FLASH_SIZE <= 8192),
 	     "Flash region assumes at most 8 MiB of flash at 0x00400000");
-#define FLASH_16M_SRD ((0xC3U << MPU_RASR_SRD_Pos) & MPU_RASR_SRD_Msk)
+#define FLASH_16M_SRD ((0xC2U << MPU_RASR_SRD_Pos) & MPU_RASR_SRD_Msk)
 #endif
 
 static struct arm_mpu_region mpu_regions[] = {
@@ -32,9 +32,8 @@ static struct arm_mpu_region mpu_regions[] = {
 
 #if defined(CONFIG_XIP) && (CONFIG_FLASH_SIZE > 4096)
 	/*
-	 * A region's base must be aligned to its size: 8 MiB of flash from 0x00400000 is a
-	 * 16 MiB region from 0x00000000 with its first two and last two 2 MiB subregions
-	 * disabled, leaving 0x00400000-0x00BFFFFF.
+	 * Flash 0x00400000-0x00BFFFFF: 16 MiB region at 0, subregions 1, 6, 7 disabled.
+	 * Subregion 0 covers the ITCM.
 	 */
 	MPU_REGION_ENTRY("FLASH", 0, REGION_FLASH_ATTR(REGION_16M | FLASH_16M_SRD)),
 #elif defined(CONFIG_XIP)
